@@ -6,7 +6,6 @@ import (
 	"os/signal"
 	"strconv"
 
-	"github.com/go-zoox/datetime"
 	"github.com/go-zoox/logger"
 	mdns "github.com/miekg/dns"
 )
@@ -62,7 +61,7 @@ func (s *Server) handleFunc(w mdns.ResponseWriter, req *mdns.Msg) {
 	Q := Question{UnFqdn(q.Name), mdns.TypeToString[q.Qtype], mdns.ClassToString[q.Qclass]}
 
 	remote := w.RemoteAddr().(*net.UDPAddr).IP
-	logger.Info("[%s] [%s] lookup %s", datetime.Now().Format("YYYY-MM-DD HH:mm:ss"), remote, Q.String())
+	logger.Info("[%s] lookup %s", remote, Q.String())
 
 	IPQuery := isIPQuery(q)
 
