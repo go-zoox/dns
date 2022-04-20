@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/go-zoox/logger"
+	"github.com/miekg/dns"
 	mdns "github.com/miekg/dns"
 )
 
@@ -56,11 +57,24 @@ func (s *Server) Handle(cb func(host string, typ int) ([]string, error)) {
 	s.handler = cb
 }
 
-func (s *Server) handleFunc(w mdns.ResponseWriter, req *mdns.Msg) {
+func (s *Server) doUDP(w mdns.ResponseWriter, req *mdns.Msg) {
+	s.do("udp", w, req)
+}
+
+func (s *Server) doTCP(w mdns.ResponseWriter, req *mdns.Msg) {
+	s.do("tcp", w, req)
+}
+
+func (s *Server) do(typ string, w mdns.ResponseWriter, req *mdns.Msg) {
 	q := req.Question[0]
 	Q := Question{UnFqdn(q.Name), mdns.TypeToString[q.Qtype], mdns.ClassToString[q.Qclass]}
 
-	remote := w.RemoteAddr().(*net.UDPAddr).IP
+	var remote net.IP
+	if typ == "tcp" {
+		remote = w.RemoteAddr().(*net.TCPAddr).IP
+	} else {
+		remote = w.RemoteAddr().(*net.UDPAddr).IP
+	}
 	logger.Info("[%s] lookup %s", remote, Q.String())
 
 	IPQuery := isIPQuery(q)
@@ -114,10 +128,22 @@ func (s *Server) handleFunc(w mdns.ResponseWriter, req *mdns.Msg) {
 	w.WriteMsg(m)
 }
 
+func (s *Server) start(typ string, server *dns.Server) {
+	logger.Info("Start %s listener on %s/%s", server.Net, s.Addr(), typ)
+	err := server.ListenAndServe()
+	if err != nil {
+		logger.Error("Start %s listener on %s/%s failed:%s", server.Net, s.Addr(), typ, err.Error())
+	}
+}
+
 // Serve starts the dns server
 func (s *Server) Serve() {
+
 	udpHandler := mdns.NewServeMux()
-	udpHandler.HandleFunc(".", s.handleFunc)
+	udpHandler.HandleFunc(".", s.doUDP)
+
+	tcpHandler := mdns.NewServeMux()
+	tcpHandler.HandleFunc(".", s.doTCP)
 
 	udpServer := &mdns.Server{
 		Addr:    s.Addr(),
@@ -126,13 +152,13 @@ func (s *Server) Serve() {
 		UDPSize: 65535,
 	}
 
-	go func() {
-		logger.Info("Start %s listener on %s", udpServer.Net, s.Addr())
-		err := udpServer.ListenAndServe()
-		if err != nil {
-			logger.Error("Start %s listener on %s failed:%s", udpServer.Net, s.Addr(), err.Error())
-		}
-	}()
+	tcpServer := &dns.Server{Addr: s.Addr(),
+		Net:     "tcp",
+		Handler: tcpHandler,
+	}
+
+	go s.start("udp", udpServer)
+	go s.start("tcp", tcpServer)
 
 	sig := make(chan os.Signal)
 	signal.Notify(sig, os.Interrupt)
