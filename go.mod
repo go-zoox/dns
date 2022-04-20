@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/go-zoox/errors v1.0.2
-	github.com/go-zoox/kv v1.1.5
+	github.com/go-zoox/kv v1.1.7
 	github.com/go-zoox/logger v1.1.0
 	github.com/miekg/dns v1.1.48
 )

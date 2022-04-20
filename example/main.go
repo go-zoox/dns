@@ -34,7 +34,7 @@ func main() {
 			return nil, err
 		} else {
 			cache.Set(key, ips, 5*60*1000)
-			logger.Info("found host(%s %d) %v\n", host, typ, ips)
+			logger.Info("found host(%s %d) %v", host, typ, ips)
 			return ips, nil
 		}
 	})
