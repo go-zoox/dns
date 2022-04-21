@@ -12,10 +12,11 @@ func TestClientLookUp(t *testing.T) {
 		t.Error(err)
 	}
 
+	fmt.Println("IPv4:", ip)
 	if len(ip) == 0 {
 		t.Errorf("expect ip for www.baidu.com, but none")
 	}
 
 	ip, _ = client.LookUpIPv6("v216.whateverhappens.org")
-	fmt.Println("xxx:", ip)
+	fmt.Println("IPv6:", ip)
 }

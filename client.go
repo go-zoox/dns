@@ -23,10 +23,14 @@ func NewClient(options ...*ClientOptions) *Client {
 	servers := []*ClientDNSServer{}
 
 	if len(options) > 0 {
-		servers = append(servers, options[0].servers...)
-	}
+		if options[0].servers == nil {
+			panic("servers are required")
+		}
 
-	servers = append(servers, NewClientDNSServer(DefaultDNSServer, 53))
+		servers = append(servers, options[0].servers...)
+	} else {
+		servers = append(servers, NewClientDNSServer(DefaultDNSServer, 53))
+	}
 
 	core := &mdns.Client{
 		Timeout: 5 * time.Second,
@@ -99,18 +103,16 @@ func (client *Client) Query(m *mdns.Msg) (*mdns.Msg, error) {
 	var err error
 	for _, s := range client.servers {
 		r, _, err = client.core.Exchange(m, net.JoinHostPort(s.Server, strconv.Itoa(s.Port)))
-		if err != nil {
-			return nil, err
+		if err == nil && r.Rcode == mdns.RcodeSuccess {
+			return r, nil
 		}
-		// if r.Rcode != mdns.RcodeSuccess {
-		// 	return nil, errors.New("failed to query: " + domain)
-		// }
+
 		if r.Rcode != mdns.RcodeSuccess {
-			return nil, errors.New("failed to query")
+			err = errors.New("failed to query with code: " + strconv.Itoa(r.Rcode))
 		}
 	}
 
-	return r, nil
+	return r, err
 }
 
 type ClientDNSServer struct {
