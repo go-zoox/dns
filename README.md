@@ -41,6 +41,24 @@ func main() {
 }
 ```
 
+## Features
+
+### Client
+* [ ] Plain DNS
+	* [x] Plain DNS in UDP
+	* [ ] Plain DNS in TCP
+* [ ] DNS-over-TLS (DoT)
+* [ ] DNS-over-HTTPS (DoH)
+* [ ] DNS-over-QUIC (DoQ)
+
+### Server
+* [ ] Plain DNS
+	* [x] Plain DNS in UDP
+	* [x] Plain DNS in TCP
+* [ ] DNS-over-TLS (DoT)
+* [ ] DNS-over-HTTPS (DoH)
+* [ ] DNS-over-QUIC (DoQ)
+
 ## Inspired By
 * [AdGuardHome](https://github.com/AdguardTeam/AdGuardHome) - Network-wide ads & trackers blocking DNS server.
 * [kenshinx/godns](https://github.com/kenshinx/godns) - A fast dns cache server written by go.
