@@ -16,14 +16,14 @@ type Client struct {
 }
 
 type ClientOptions struct {
-	servers []*ClientDNSServer
+	Servers []*ClientDNSServer
 }
 
 func NewClient(options ...*ClientOptions) *Client {
 	servers := []*ClientDNSServer{}
 
-	if len(options) > 0 && options[0].servers != nil && len(options[0].servers) > 0 {
-		servers = append(servers, options[0].servers...)
+	if len(options) > 0 && options[0].Servers != nil && len(options[0].Servers) > 0 {
+		servers = append(servers, options[0].Servers...)
 	} else {
 		servers = append(servers, NewClientDNSServer(DefaultDNSServer, 53))
 	}
