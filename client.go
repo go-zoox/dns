@@ -22,11 +22,7 @@ type ClientOptions struct {
 func NewClient(options ...*ClientOptions) *Client {
 	servers := []*ClientDNSServer{}
 
-	if len(options) > 0 {
-		if options[0].servers == nil {
-			panic("servers are required")
-		}
-
+	if len(options) > 0 && options[0].servers != nil && len(options[0].servers) > 0 {
 		servers = append(servers, options[0].servers...)
 	} else {
 		servers = append(servers, NewClientDNSServer(DefaultDNSServer, 53))
