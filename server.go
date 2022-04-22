@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"time"
 
 	"github.com/go-zoox/logger"
 	"github.com/miekg/dns"
@@ -75,12 +76,13 @@ func (s *Server) do(typ string, w mdns.ResponseWriter, req *mdns.Msg) {
 	} else {
 		remote = w.RemoteAddr().(*net.UDPAddr).IP
 	}
-	logger.Info("[%s] lookup %s", remote, Q.String())
 
 	IPQuery := isIPQuery(q)
 
 	m := new(mdns.Msg)
 	m.SetReply(req)
+
+	lookupTime := createTimeUse()
 
 	switch IPQuery {
 	case QueryTypeIPv4:
@@ -92,8 +94,9 @@ func (s *Server) do(typ string, w mdns.ResponseWriter, req *mdns.Msg) {
 		}
 
 		if ips, err := s.handler(Q.qname, QueryTypeIPv4); err != nil {
-			logger.Error("[%s] lookup %s error(%s)", remote, Q.qname, err)
+			logger.Error("[%s] lookup %s error(%s) +%dms", remote, Q.qname, err, lookupTime())
 		} else {
+			logger.Info("[%s] lookup %s +%dms", remote, Q.String(), lookupTime())
 			for _, ip := range ips {
 				a := &mdns.A{
 					Hdr: rr_header,
@@ -111,8 +114,9 @@ func (s *Server) do(typ string, w mdns.ResponseWriter, req *mdns.Msg) {
 		}
 
 		if ips, err := s.handler(Q.qname, QueryTypeIPv6); err != nil {
-			logger.Error("[%s] lookup %s error(%s)", remote, Q.qname, err)
+			logger.Error("[%s] lookup %s error(%s) +%dms", remote, Q.qname, err, lookupTime())
 		} else {
+			logger.Info("[%s] lookup %s +%dms", remote, Q.String(), lookupTime())
 			for _, ip := range ips {
 				aaaa := &mdns.AAAA{
 					Hdr:  rr_header,
@@ -202,5 +206,12 @@ func isIPQuery(q mdns.Question) int {
 		return QueryTypeIPv6
 	default:
 		return QueryTypeUnknown
+	}
+}
+
+func createTimeUse() func() int64 {
+	startAt := time.Now()
+	return func() int64 {
+		return int64(time.Since(startAt) / time.Millisecond)
 	}
 }
