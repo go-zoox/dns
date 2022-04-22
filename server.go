@@ -91,17 +91,16 @@ func (s *Server) do(typ string, w mdns.ResponseWriter, req *mdns.Msg) {
 			Ttl:    s.ttl,
 		}
 
-		ips, err := s.handler(Q.qname, QueryTypeIPv4)
-		if err != nil {
+		if ips, err := s.handler(Q.qname, QueryTypeIPv4); err != nil {
 			logger.Error("lookup %s error %s", Q.qname, err)
-		}
-
-		for _, ip := range ips {
-			a := &mdns.A{
-				Hdr: rr_header,
-				A:   net.ParseIP(ip).To4(),
+		} else {
+			for _, ip := range ips {
+				a := &mdns.A{
+					Hdr: rr_header,
+					A:   net.ParseIP(ip).To4(),
+				}
+				m.Answer = append(m.Answer, a)
 			}
-			m.Answer = append(m.Answer, a)
 		}
 	case QueryTypeIPv6:
 		rr_header := mdns.RR_Header{
@@ -111,17 +110,16 @@ func (s *Server) do(typ string, w mdns.ResponseWriter, req *mdns.Msg) {
 			Ttl:    s.ttl,
 		}
 
-		ips, err := s.handler(Q.qname, QueryTypeIPv6)
-		if err != nil {
+		if ips, err := s.handler(Q.qname, QueryTypeIPv6); err != nil {
 			logger.Error("lookup %s error %s", Q.qname, err)
-		}
-
-		for _, ip := range ips {
-			aaaa := &mdns.AAAA{
-				Hdr:  rr_header,
-				AAAA: net.ParseIP(ip).To16(),
+		} else {
+			for _, ip := range ips {
+				aaaa := &mdns.AAAA{
+					Hdr:  rr_header,
+					AAAA: net.ParseIP(ip).To16(),
+				}
+				m.Answer = append(m.Answer, aaaa)
 			}
-			m.Answer = append(m.Answer, aaaa)
 		}
 	}
 
