@@ -99,11 +99,11 @@ func (client *Client) Query(m *mdns.Msg) (*mdns.Msg, error) {
 	var err error
 	for _, s := range client.servers {
 		r, _, err = client.core.Exchange(m, net.JoinHostPort(s.Server, strconv.Itoa(s.Port)))
-		if err == nil && r.Rcode == mdns.RcodeSuccess {
+		if err == nil && r != nil && r.Rcode == mdns.RcodeSuccess {
 			return r, nil
 		}
 
-		if r.Rcode != mdns.RcodeSuccess {
+		if r != nil && r.Rcode != mdns.RcodeSuccess {
 			err = errors.New("failed to query with code: " + strconv.Itoa(r.Rcode))
 		}
 	}
