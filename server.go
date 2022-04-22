@@ -92,7 +92,7 @@ func (s *Server) do(typ string, w mdns.ResponseWriter, req *mdns.Msg) {
 		}
 
 		if ips, err := s.handler(Q.qname, QueryTypeIPv4); err != nil {
-			logger.Error("lookup %s error %s", Q.qname, err)
+			logger.Error("[%s] lookup %s error(%s)", remote, Q.qname, err)
 		} else {
 			for _, ip := range ips {
 				a := &mdns.A{
@@ -111,7 +111,7 @@ func (s *Server) do(typ string, w mdns.ResponseWriter, req *mdns.Msg) {
 		}
 
 		if ips, err := s.handler(Q.qname, QueryTypeIPv6); err != nil {
-			logger.Error("lookup %s error %s", Q.qname, err)
+			logger.Error("[%s] lookup %s error(%s)", remote, Q.qname, err)
 		} else {
 			for _, ip := range ips {
 				aaaa := &mdns.AAAA{
