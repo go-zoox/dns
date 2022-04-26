@@ -59,9 +59,7 @@ func (client *Client) LookUp(domain string, options ...*LookUpOptions) ([]string
 }
 
 func (client *Client) LookUpIPv4(domain string) ([]string, error) {
-	m := new(mdns.Msg)
-	m.SetQuestion(mdns.Fqdn(domain), mdns.TypeA)
-	r, err := client.Query(m)
+	r, err := client.Query(domain, mdns.TypeA)
 	if err != nil {
 		return nil, err
 	}
@@ -77,9 +75,7 @@ func (client *Client) LookUpIPv4(domain string) ([]string, error) {
 }
 
 func (client *Client) LookUpIPv6(domain string) ([]string, error) {
-	m := new(mdns.Msg)
-	m.SetQuestion(mdns.Fqdn(domain), mdns.TypeAAAA)
-	r, err := client.Query(m)
+	r, err := client.Query(domain, mdns.TypeAAAA)
 	if err != nil {
 		return nil, err
 	}
@@ -94,21 +90,33 @@ func (client *Client) LookUpIPv6(domain string) ([]string, error) {
 	return dst, nil
 }
 
-func (client *Client) Query(m *mdns.Msg) (*mdns.Msg, error) {
-	var r *mdns.Msg
+func (client *Client) CreateMsg(domain string, typ uint16) *mdns.Msg {
+	m := new(mdns.Msg)
+	m.Id = mdns.Id()
+	m.RecursionDesired = true
+	m.SetQuestion(mdns.Fqdn(domain), typ)
+
+	return m
+}
+
+func (client *Client) Query(domain string, typ uint16) (*mdns.Msg, error) {
+	var reply *mdns.Msg
 	var err error
+
+	msg := client.CreateMsg(domain, typ)
+
 	for _, s := range client.servers {
-		r, _, err = client.core.Exchange(m, net.JoinHostPort(s.Server, strconv.Itoa(s.Port)))
-		if err == nil && r != nil && r.Rcode == mdns.RcodeSuccess {
-			return r, nil
+		reply, _, err = client.core.Exchange(msg, net.JoinHostPort(s.Server, strconv.Itoa(s.Port)))
+		if err == nil && reply != nil && reply.Rcode == mdns.RcodeSuccess {
+			return reply, nil
 		}
 
-		if r != nil && r.Rcode != mdns.RcodeSuccess {
-			err = errors.New("failed to query with code: " + strconv.Itoa(r.Rcode))
+		if reply != nil && reply.Rcode != mdns.RcodeSuccess {
+			err = errors.New("failed to query with code: " + strconv.Itoa(reply.Rcode))
 		}
 	}
 
-	return r, err
+	return reply, err
 }
 
 type ClientDNSServer struct {
