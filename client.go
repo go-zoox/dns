@@ -10,11 +10,13 @@ import (
 	mdns "github.com/miekg/dns"
 )
 
+// Client is a DNS client
 type Client struct {
 	Servers []string
 	Timeout time.Duration
 }
 
+// ClientOptions is a set of options for Client
 type ClientOptions struct {
 	// Servers is a list of DNS servers to use.
 	// Support
@@ -30,6 +32,7 @@ type ClientOptions struct {
 	Timeout time.Duration
 }
 
+// NewClient creates a new DNS client
 func NewClient(options ...*ClientOptions) *Client {
 	servers := []string{}
 	timeout := 5 * time.Second
@@ -52,11 +55,13 @@ func NewClient(options ...*ClientOptions) *Client {
 	}
 }
 
+// LookUpOptions is a set of options for LookUp
 type LookUpOptions struct {
 	Typ int
 }
 
-func (client *Client) LookUp(domain string, options ...*LookUpOptions) ([]string, error) {
+// LookUp looks up a domain name and returns a list of IP addresses
+func (c *Client) LookUp(domain string, options ...*LookUpOptions) ([]string, error) {
 	typ := QueryTypeIPv4
 	if len(options) > 0 {
 		typ = options[0].Typ
@@ -64,16 +69,16 @@ func (client *Client) LookUp(domain string, options ...*LookUpOptions) ([]string
 
 	switch typ {
 	case QueryTypeIPv4:
-		return client.LookUpIPv4(domain)
+		return c.lookUpIPv4(domain)
 	case QueryTypeIPv6:
-		return client.LookUpIPv6(domain)
+		return c.lookUpIPv6(domain)
 	default:
 		return nil, errors.Errorf("invalid type: %d", typ)
 	}
 }
 
-func (client *Client) LookUpIPv4(domain string) ([]string, error) {
-	r, err := client.Query(domain, mdns.TypeA)
+func (c *Client) lookUpIPv4(domain string) ([]string, error) {
+	r, err := c.query(domain, mdns.TypeA)
 	if err != nil {
 		return nil, err
 	}
@@ -88,8 +93,8 @@ func (client *Client) LookUpIPv4(domain string) ([]string, error) {
 	return dst, nil
 }
 
-func (client *Client) LookUpIPv6(domain string) ([]string, error) {
-	r, err := client.Query(domain, mdns.TypeAAAA)
+func (c *Client) lookUpIPv6(domain string) ([]string, error) {
+	r, err := c.query(domain, mdns.TypeAAAA)
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +109,7 @@ func (client *Client) LookUpIPv6(domain string) ([]string, error) {
 	return dst, nil
 }
 
-func (client *Client) createRequest(domain string, typ uint16) *mdns.Msg {
+func (c *Client) createRequest(domain string, typ uint16) *mdns.Msg {
 	req := new(mdns.Msg)
 	req.Id = mdns.Id()
 	req.RecursionDesired = true
@@ -115,7 +120,7 @@ func (client *Client) createRequest(domain string, typ uint16) *mdns.Msg {
 	return req
 }
 
-func (c *Client) Query(domain string, typ uint16) (*mdns.Msg, error) {
+func (c *Client) query(domain string, typ uint16) (*mdns.Msg, error) {
 	var reply *mdns.Msg
 	var err error
 	var u upstream.Upstream

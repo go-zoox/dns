@@ -12,6 +12,7 @@ import (
 	mdns "github.com/miekg/dns"
 )
 
+// Server is a dns server
 type Server struct {
 	port    int
 	host    string
@@ -19,6 +20,7 @@ type Server struct {
 	handler func(host string, typ int) ([]string, error)
 }
 
+// ServerOptions is the options for the server
 type ServerOptions struct {
 	Port int
 	Host string
@@ -49,6 +51,7 @@ func NewServer(options ...*ServerOptions) *Server {
 	}
 }
 
+// Addr returns the address of the server
 func (s *Server) Addr() string {
 	return net.JoinHostPort(s.host, strconv.Itoa(s.port))
 }
@@ -86,7 +89,7 @@ func (s *Server) do(typ string, w mdns.ResponseWriter, req *mdns.Msg) {
 
 	switch IPQuery {
 	case QueryTypeIPv4:
-		rr_header := mdns.RR_Header{
+		rrHeader := mdns.RR_Header{
 			Name:   q.Name,
 			Rrtype: mdns.TypeA,
 			Class:  mdns.ClassINET,
@@ -99,14 +102,14 @@ func (s *Server) do(typ string, w mdns.ResponseWriter, req *mdns.Msg) {
 			logger.Info("[%s] lookup %s +%dms", remote, Q.String(), lookupTime())
 			for _, ip := range ips {
 				a := &mdns.A{
-					Hdr: rr_header,
+					Hdr: rrHeader,
 					A:   net.ParseIP(ip).To4(),
 				}
 				m.Answer = append(m.Answer, a)
 			}
 		}
 	case QueryTypeIPv6:
-		rr_header := mdns.RR_Header{
+		rrHeader := mdns.RR_Header{
 			Name:   q.Name,
 			Rrtype: mdns.TypeAAAA,
 			Class:  mdns.ClassINET,
@@ -119,7 +122,7 @@ func (s *Server) do(typ string, w mdns.ResponseWriter, req *mdns.Msg) {
 			logger.Info("[%s] lookup %s +%dms", remote, Q.String(), lookupTime())
 			for _, ip := range ips {
 				aaaa := &mdns.AAAA{
-					Hdr:  rr_header,
+					Hdr:  rrHeader,
 					AAAA: net.ParseIP(ip).To16(),
 				}
 				m.Answer = append(m.Answer, aaaa)
@@ -176,7 +179,7 @@ forever:
 
 }
 
-//
+// UnFqdn converts a fqdn to a non-fqdn
 func UnFqdn(s string) string {
 	if mdns.IsFqdn(s) {
 		return s[:len(s)-1]
@@ -184,6 +187,7 @@ func UnFqdn(s string) string {
 	return s
 }
 
+// Question represents a question
 type Question struct {
 	qname  string
 	qtype  string

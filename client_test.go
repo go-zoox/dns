@@ -17,6 +17,6 @@ func TestClientLookUp(t *testing.T) {
 		t.Errorf("expect ip for www.baidu.com, but none")
 	}
 
-	ip, _ = client.LookUpIPv6("v216.whateverhappens.org")
+	ip, _ = client.lookUpIPv6("v216.whateverhappens.org")
 	fmt.Println("IPv6:", ip)
 }
