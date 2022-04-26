@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/go-zoox/dns"
+	"github.com/go-zoox/dns/client"
 	"github.com/go-zoox/kv"
 	"github.com/go-zoox/logger"
 )
@@ -12,7 +13,7 @@ func main() {
 	server := dns.NewServer(&dns.ServerOptions{
 		Port: 53,
 	})
-	client := dns.NewClient()
+	c := dns.NewClient()
 
 	cache := kv.NewMemory()
 
@@ -30,7 +31,7 @@ func main() {
 			return []string{"6.6.6.6"}, nil
 		}
 
-		if ips, err := client.LookUp(host, &dns.LookUpOptions{Typ: typ}); err != nil {
+		if ips, err := c.LookUp(host, &client.LookUpOptions{Typ: typ}); err != nil {
 			return nil, err
 		} else {
 			cache.Set(key, ips, 5*60*1000)
