@@ -41,6 +41,8 @@ func New(options ...*Options) *Client {
 	if len(options) > 0 {
 		if options[0].Servers != nil && len(options[0].Servers) > 0 {
 			servers = append(servers, options[0].Servers...)
+		} else {
+			servers = append(servers, constants.DefaultDNSServer)
 		}
 
 		if options[0].Timeout != 0 {
