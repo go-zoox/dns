@@ -6,7 +6,7 @@ import (
 )
 
 func TestClientLookUp(t *testing.T) {
-	client := NewClient()
+	client := New()
 	ip, err := client.LookUp("www.baidu.com")
 	if err != nil {
 		t.Error(err)
