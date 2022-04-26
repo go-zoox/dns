@@ -1,40 +1,54 @@
 package dns
 
 import (
-	"net"
 	"strconv"
 	"time"
 
 	"github.com/go-zoox/errors"
 
+	"github.com/AdguardTeam/dnsproxy/upstream"
 	mdns "github.com/miekg/dns"
 )
 
 type Client struct {
-	core    *mdns.Client
-	servers []*ClientDNSServer
+	Servers []string
+	Timeout time.Duration
 }
 
 type ClientOptions struct {
-	Servers []*ClientDNSServer
+	// Servers is a list of DNS servers to use.
+	// Support
+	//   1. PLAIN DNS						- 8.8.8.8:53 or udp://dns.adguard.com for plain DNS;
+	//	 2. PLAIN DNS-over-TCP 	- tcp://8.8.8.8:53 for plain DNS-over-TCP;
+	// 	 3. DNS-over-TLS 				- tls://1.1.1.1 for DNS-over-TLS;
+	//   4. DNS-over-HTTPS			- https://dns.adguard.com/dns-query for DNS-over-HTTPS;
+	//   5. DNSCRYPT 						- sdns://... for DNS stamp, see https://dnscrypt.info/stamps-specifications.
+	Servers []string
+
+	// Timeout is the maximum duration to wait for a response from a server.
+	// default: 5 seconds
+	Timeout time.Duration
 }
 
 func NewClient(options ...*ClientOptions) *Client {
-	servers := []*ClientDNSServer{}
+	servers := []string{}
+	timeout := 5 * time.Second
 
-	if len(options) > 0 && options[0].Servers != nil && len(options[0].Servers) > 0 {
-		servers = append(servers, options[0].Servers...)
+	if len(options) > 0 {
+		if options[0].Servers != nil && len(options[0].Servers) > 0 {
+			servers = append(servers, options[0].Servers...)
+		}
+
+		if options[0].Timeout != 0 {
+			timeout = options[0].Timeout
+		}
 	} else {
-		servers = append(servers, NewClientDNSServer(DefaultDNSServer, 53))
-	}
-
-	core := &mdns.Client{
-		Timeout: 5 * time.Second,
+		servers = append(servers, DefaultDNSServer)
 	}
 
 	return &Client{
-		core:    core,
-		servers: servers,
+		Servers: servers,
+		Timeout: timeout,
 	}
 }
 
@@ -90,23 +104,35 @@ func (client *Client) LookUpIPv6(domain string) ([]string, error) {
 	return dst, nil
 }
 
-func (client *Client) CreateMsg(domain string, typ uint16) *mdns.Msg {
-	m := new(mdns.Msg)
-	m.Id = mdns.Id()
-	m.RecursionDesired = true
-	m.SetQuestion(mdns.Fqdn(domain), typ)
+func (client *Client) createRequest(domain string, typ uint16) *mdns.Msg {
+	req := new(mdns.Msg)
+	req.Id = mdns.Id()
+	req.RecursionDesired = true
+	req.Question = []mdns.Question{
+		{Name: domain + ".", Qtype: typ, Qclass: mdns.ClassINET},
+	}
 
-	return m
+	return req
 }
 
-func (client *Client) Query(domain string, typ uint16) (*mdns.Msg, error) {
+func (c *Client) Query(domain string, typ uint16) (*mdns.Msg, error) {
 	var reply *mdns.Msg
 	var err error
+	var u upstream.Upstream
 
-	msg := client.CreateMsg(domain, typ)
+	req := c.createRequest(domain, typ)
 
-	for _, s := range client.servers {
-		reply, _, err = client.core.Exchange(msg, net.JoinHostPort(s.Server, strconv.Itoa(s.Port)))
+	for _, s := range c.Servers {
+		u, err = upstream.AddressToUpstream(s, &upstream.Options{
+			Timeout: c.Timeout,
+		})
+		if err != nil {
+			// return nil, fmt.Errorf("Cannot create an upstream: %s", err)
+			// try next server
+			continue
+		}
+
+		reply, err = u.Exchange(req)
 		if err == nil && reply != nil && reply.Rcode == mdns.RcodeSuccess {
 			return reply, nil
 		}
@@ -117,13 +143,4 @@ func (client *Client) Query(domain string, typ uint16) (*mdns.Msg, error) {
 	}
 
 	return reply, err
-}
-
-type ClientDNSServer struct {
-	Server string
-	Port   int
-}
-
-func NewClientDNSServer(server string, port int) *ClientDNSServer {
-	return &ClientDNSServer{server, port}
 }

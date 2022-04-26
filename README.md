@@ -44,12 +44,13 @@ func main() {
 ## Features
 
 ### Client
-* [ ] Plain DNS
+* [x] Plain DNS
 	* [x] Plain DNS in UDP
-	* [ ] Plain DNS in TCP
-* [ ] DNS-over-TLS (DoT)
-* [ ] DNS-over-HTTPS (DoH)
-* [ ] DNS-over-QUIC (DoQ)
+	* [x] Plain DNS in TCP
+* [x] DNS-over-TLS (DoT)
+* [x] DNS-over-HTTPS (DoH)
+* [x] DNS-over-QUIC (DoQ)
+* [x] DNSCrypt
 
 ### Server
 * [ ] Plain DNS
