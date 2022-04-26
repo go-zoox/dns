@@ -1,4 +1,4 @@
-package dns
+package constants
 
 const (
 	// DefaultDNSServer is the default dns server

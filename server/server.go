@@ -1,4 +1,4 @@
-package dns
+package server
 
 import (
 	"net"
@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/go-zoox/dns/constants"
 	"github.com/go-zoox/logger"
-	"github.com/miekg/dns"
 	mdns "github.com/miekg/dns"
 )
 
@@ -20,15 +20,15 @@ type Server struct {
 	handler func(host string, typ int) ([]string, error)
 }
 
-// ServerOptions is the options for the server
-type ServerOptions struct {
+// Options is the options for the server
+type Options struct {
 	Port int
 	Host string
 	TTL  uint32
 }
 
-// NewServer creates a new dns server
-func NewServer(options ...*ServerOptions) *Server {
+// New creates a new dns server
+func New(options ...*Options) *Server {
 	port := 8853 // 53
 	host := "0.0.0.0"
 	ttl := uint32(500) // 500 ms
@@ -88,7 +88,7 @@ func (s *Server) do(typ string, w mdns.ResponseWriter, req *mdns.Msg) {
 	lookupTime := createTimeUse()
 
 	switch IPQuery {
-	case QueryTypeIPv4:
+	case constants.QueryTypeIPv4:
 		rrHeader := mdns.RR_Header{
 			Name:   q.Name,
 			Rrtype: mdns.TypeA,
@@ -96,7 +96,7 @@ func (s *Server) do(typ string, w mdns.ResponseWriter, req *mdns.Msg) {
 			Ttl:    s.ttl,
 		}
 
-		if ips, err := s.handler(Q.qname, QueryTypeIPv4); err != nil {
+		if ips, err := s.handler(Q.qname, constants.QueryTypeIPv4); err != nil {
 			logger.Error("[%s] lookup %s error(%s) +%dms", remote, Q.qname, err, lookupTime())
 		} else {
 			logger.Info("[%s] lookup %s +%dms", remote, Q.String(), lookupTime())
@@ -108,7 +108,7 @@ func (s *Server) do(typ string, w mdns.ResponseWriter, req *mdns.Msg) {
 				m.Answer = append(m.Answer, a)
 			}
 		}
-	case QueryTypeIPv6:
+	case constants.QueryTypeIPv6:
 		rrHeader := mdns.RR_Header{
 			Name:   q.Name,
 			Rrtype: mdns.TypeAAAA,
@@ -116,7 +116,7 @@ func (s *Server) do(typ string, w mdns.ResponseWriter, req *mdns.Msg) {
 			Ttl:    s.ttl,
 		}
 
-		if ips, err := s.handler(Q.qname, QueryTypeIPv6); err != nil {
+		if ips, err := s.handler(Q.qname, constants.QueryTypeIPv6); err != nil {
 			logger.Error("[%s] lookup %s error(%s) +%dms", remote, Q.qname, err, lookupTime())
 		} else {
 			logger.Info("[%s] lookup %s +%dms", remote, Q.String(), lookupTime())
@@ -133,7 +133,7 @@ func (s *Server) do(typ string, w mdns.ResponseWriter, req *mdns.Msg) {
 	w.WriteMsg(m)
 }
 
-func (s *Server) start(typ string, server *dns.Server) {
+func (s *Server) start(typ string, server *mdns.Server) {
 	logger.Info("Start %s listener on %s/%s", server.Net, s.Addr(), typ)
 	err := server.ListenAndServe()
 	if err != nil {
@@ -157,7 +157,7 @@ func (s *Server) Serve() {
 		UDPSize: 65535,
 	}
 
-	tcpServer := &dns.Server{Addr: s.Addr(),
+	tcpServer := &mdns.Server{Addr: s.Addr(),
 		Net:     "tcp",
 		Handler: tcpHandler,
 	}
@@ -200,16 +200,16 @@ func (q *Question) String() string {
 
 func isIPQuery(q mdns.Question) int {
 	if q.Qclass != mdns.ClassINET {
-		return QueryTypeUnknown
+		return constants.QueryTypeUnknown
 	}
 
 	switch q.Qtype {
 	case mdns.TypeA:
-		return QueryTypeIPv4
+		return constants.QueryTypeIPv4
 	case mdns.TypeAAAA:
-		return QueryTypeIPv6
+		return constants.QueryTypeIPv6
 	default:
-		return QueryTypeUnknown
+		return constants.QueryTypeUnknown
 	}
 }
 

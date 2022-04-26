@@ -1,4 +1,4 @@
-package dns
+package client
 
 import (
 	"fmt"

@@ -1,4 +1,4 @@
-package dns
+package client
 
 import (
 	"strconv"
@@ -7,6 +7,7 @@ import (
 	"github.com/go-zoox/errors"
 
 	"github.com/AdguardTeam/dnsproxy/upstream"
+	"github.com/go-zoox/dns/constants"
 	mdns "github.com/miekg/dns"
 )
 
@@ -16,8 +17,8 @@ type Client struct {
 	Timeout time.Duration
 }
 
-// ClientOptions is a set of options for Client
-type ClientOptions struct {
+// Options is a set of options for Client
+type Options struct {
 	// Servers is a list of DNS servers to use.
 	// Support
 	//   1. PLAIN DNS						- 8.8.8.8:53 or udp://dns.adguard.com for plain DNS;
@@ -32,8 +33,8 @@ type ClientOptions struct {
 	Timeout time.Duration
 }
 
-// NewClient creates a new DNS client
-func NewClient(options ...*ClientOptions) *Client {
+// New creates a new DNS client
+func New(options ...*Options) *Client {
 	servers := []string{}
 	timeout := 5 * time.Second
 
@@ -46,7 +47,7 @@ func NewClient(options ...*ClientOptions) *Client {
 			timeout = options[0].Timeout
 		}
 	} else {
-		servers = append(servers, DefaultDNSServer)
+		servers = append(servers, constants.DefaultDNSServer)
 	}
 
 	return &Client{
@@ -62,15 +63,15 @@ type LookUpOptions struct {
 
 // LookUp looks up a domain name and returns a list of IP addresses
 func (c *Client) LookUp(domain string, options ...*LookUpOptions) ([]string, error) {
-	typ := QueryTypeIPv4
+	typ := constants.QueryTypeIPv4
 	if len(options) > 0 {
 		typ = options[0].Typ
 	}
 
 	switch typ {
-	case QueryTypeIPv4:
+	case constants.QueryTypeIPv4:
 		return c.lookUpIPv4(domain)
-	case QueryTypeIPv6:
+	case constants.QueryTypeIPv6:
 		return c.lookUpIPv6(domain)
 	default:
 		return nil, errors.Errorf("invalid type: %d", typ)
