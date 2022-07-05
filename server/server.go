@@ -133,17 +133,19 @@ func (s *Server) do(typ string, w mdns.ResponseWriter, req *mdns.Msg) {
 	w.WriteMsg(m)
 }
 
-func (s *Server) start(typ string, server *mdns.Server) {
+func (s *Server) start(typ string, server *mdns.Server) error {
 	logger.Info("Start %s listener on %s/%s", server.Net, s.Addr(), typ)
 	err := server.ListenAndServe()
 	if err != nil {
-		logger.Error("Start %s listener on %s/%s failed:%s", server.Net, s.Addr(), typ, err.Error())
+		// logger.Error("Start %s listener on %s/%s failed:%s", server.Net, s.Addr(), typ, err.Error())
+		return err
 	}
+
+	return nil
 }
 
 // Serve starts the dns server
 func (s *Server) Serve() {
-
 	udpHandler := mdns.NewServeMux()
 	udpHandler.HandleFunc(".", s.doUDP)
 
@@ -162,21 +164,33 @@ func (s *Server) Serve() {
 		Handler: tcpHandler,
 	}
 
-	go s.start("udp", udpServer)
-	go s.start("tcp", tcpServer)
-
+	// @TODO
+	cancel := make(chan struct{})
 	sig := make(chan os.Signal)
 	signal.Notify(sig, os.Interrupt)
 
-forever:
+	go func(cancel chan struct{}, s *Server) {
+		if err := s.start("udp", udpServer); err != nil {
+			logger.Error("Start udp listener on %s failed:%s", s.Addr(), err.Error())
+			cancel <- struct{}{}
+		}
+	}(cancel, s)
+	go func(cancel chan struct{}, s *Server) {
+		if err := s.start("tcp", tcpServer); err != nil {
+			logger.Error("Start tcp listener on %s failed:%s", s.Addr(), err.Error())
+			cancel <- struct{}{}
+		}
+	}(cancel, s)
+
 	for {
 		select {
 		case <-sig:
 			logger.Info("signal received, stopping")
-			break forever
+			return
+		case <-cancel:
+			return
 		}
 	}
-
 }
 
 // UnFqdn converts a fqdn to a non-fqdn
