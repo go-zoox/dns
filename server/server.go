@@ -84,6 +84,7 @@ func (s *Server) do(typ string, w mdns.ResponseWriter, req *mdns.Msg) {
 
 	m := new(mdns.Msg)
 	m.SetReply(req)
+	m.RecursionAvailable = true
 
 	lookupTime := createTimeUse()
 
