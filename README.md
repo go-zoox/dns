@@ -8,10 +8,101 @@
 [![Release](https://img.shields.io/github/tag/go-zoox/dns.svg?label=Release)](https://github.com/go-zoox/dns/tags)
 
 ## Installation
+
+### As a Library
 To install the package, run:
 ```bash
 go get github.com/go-zoox/dns
 ```
+
+### As a CLI Tool
+To build and install the CLI tool:
+```bash
+go build -o bin/dns ./cmd/dns
+# Or install globally
+go install ./cmd/dns
+```
+
+## CLI Usage
+
+### DNS Client Query
+```bash
+# Query A record
+dns client --domain google.com --type A
+
+# Query AAAA record (IPv6)
+dns client --domain google.com --type AAAA
+
+# Use DoT server
+dns client --domain example.com --server tls://1.1.1.1
+
+# Use custom timeout
+dns client --domain example.com --timeout 10s
+```
+
+### DNS Server
+```bash
+# Start basic DNS server
+dns server --port 53
+
+# Start DNS server with DoT support
+dns server --port 53 --dot --tls-cert /path/to/cert.pem --tls-key /path/to/key.pem
+
+# Start DNS server with custom upstream
+dns server --port 53 --upstream 8.8.8.8:53 --upstream 1.1.1.1:53
+
+# Start DNS server with configuration file
+dns server --config /path/to/config.yaml
+
+# Command line flags override config file values
+dns server --config /path/to/config.yaml --port 5353
+```
+
+### Configuration File
+
+The server supports YAML configuration files for easier management. See `example/conf/server.yaml` for a complete example.
+
+**Configuration File Structure:**
+
+```yaml
+# Basic server settings
+server:
+  host: "0.0.0.0"
+  port: 53
+  ttl: 500
+
+# DNS-over-TLS (DoT) configuration
+dot:
+  enabled: false
+  port: 853
+  tls:
+    cert: "/path/to/cert.pem"
+    key: "/path/to/key.pem"
+
+# Custom domain mappings (highest priority)
+hosts:
+  "example.com": "1.2.3.4"
+  "www.example.com":
+    - "1.2.3.4"
+    - "1.2.3.5"
+  "dual.example.com":
+    a: ["1.2.3.4"]
+    aaaa: ["2001:db8::1"]
+
+# Upstream DNS servers
+upstream:
+  servers:
+    - "114.114.114.114:53"
+    - "tls://1.1.1.1"
+  timeout: "5s"
+```
+
+**Key Features:**
+- **Custom Hosts Mapping**: Define custom domain-to-IP mappings with highest priority
+- **Multiple IP Support**: Support multiple IPv4 and IPv6 addresses per domain
+- **Flexible Format**: Support simple string, list, or structured format
+- **Priority**: Custom hosts are checked before upstream DNS servers
+- **Override**: Command line flags override config file values
 
 ## Getting Started
 

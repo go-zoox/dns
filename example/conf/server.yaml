@@ -1,0 +1,53 @@
+# DNS Server Configuration Example
+# This file demonstrates all available configuration options
+
+# Basic server settings
+server:
+  host: "0.0.0.0"        # Listen address (default: 0.0.0.0)
+  port: 53               # DNS server port for UDP/TCP (default: 53)
+  ttl: 500               # TTL for DNS responses in seconds (default: 500)
+
+# DNS-over-TLS (DoT) configuration
+dot:
+  enabled: false         # Enable DoT server (default: false)
+  port: 853             # DoT server port (default: 853)
+  tls:
+    cert: "/path/to/cert.pem"    # TLS certificate file path (required if DoT enabled)
+    key: "/path/to/key.pem"      # TLS private key file path (required if DoT enabled)
+
+# Custom domain mappings (highest priority, checked before upstream DNS)
+# These mappings take precedence over upstream DNS servers
+hosts:
+  # Simple format: single domain to single IP
+  "example.com": "1.2.3.4"
+  "test.local": "192.168.1.100"
+  
+  # Multiple IPv4 addresses for a domain (A records)
+  "www.example.com":
+    - "1.2.3.4"
+    - "1.2.3.5"
+  
+  # IPv6 address (AAAA record)
+  "ipv6.example.com": "2001:db8::1"
+  
+  # Both IPv4 and IPv6 addresses
+  "dual.example.com":
+    a:     # IPv4 addresses (A records)
+      - "1.2.3.4"
+      - "1.2.3.5"
+    aaaa: # IPv6 addresses (AAAA records)
+      - "2001:db8::1"
+      - "2001:db8::2"
+  
+  # More examples
+  "api.example.com": "10.0.0.1"
+  "db.example.com": "10.0.0.2"
+
+# Upstream DNS servers (used when custom hosts don't match)
+upstream:
+  servers:
+    - "114.114.114.114:53"    # Plain DNS
+    - "8.8.8.8:53"            # Google DNS
+    - "tls://1.1.1.1"         # Cloudflare DoT (DNS-over-TLS)
+    - "https://dns.adguard.com/dns-query"  # DoH (DNS-over-HTTPS)
+  timeout: "5s"              # Query timeout (default: 5s)
