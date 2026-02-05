@@ -48,6 +48,12 @@ dns server --port 53
 # Start DNS server with DoT support
 dns server --port 53 --dot --tls-cert /path/to/cert.pem --tls-key /path/to/key.pem
 
+# Start DNS server with DoH support
+dns server --port 53 --doh --doh-port 443 --tls-cert /path/to/cert.pem --tls-key /path/to/key.pem
+
+# Start DNS server with DoQ support
+dns server --port 53 --doq --doq-port 853 --tls-cert /path/to/cert.pem --tls-key /path/to/key.pem
+
 # Start DNS server with custom upstream
 dns server --port 53 --upstream 8.8.8.8:53 --upstream 1.1.1.1:53
 
@@ -73,6 +79,22 @@ server:
 
 # DNS-over-TLS (DoT) configuration
 dot:
+  enabled: false
+  port: 853
+  tls:
+    cert: "/path/to/cert.pem"
+    key: "/path/to/key.pem"
+
+# DNS-over-HTTPS (DoH) configuration
+doh:
+  enabled: false
+  port: 443
+  tls:
+    cert: "/path/to/cert.pem"
+    key: "/path/to/key.pem"
+
+# DNS-over-QUIC (DoQ) configuration
+doq:
   enabled: false
   port: 853
   tls:
@@ -191,6 +213,80 @@ server.Handle(func(host string, typ int) ([]string, error) {
 server.Serve()
 ```
 
+### DNS-over-HTTPS (DoH) Server
+
+```go
+import (
+	"github.com/go-zoox/dns"
+)
+
+// Create DoH server with TLS certificate
+server := dns.NewServer(&dns.ServerOptions{
+	Port:        53,  // Plain DNS port
+	DoHPort:     443, // DoH port (default)
+	EnableDoH:   true,
+	TLSCertFile: "/path/to/cert.pem",
+	TLSKeyFile:  "/path/to/key.pem",
+})
+
+// Or use tls.Config directly
+tlsConfig := &tls.Config{
+	Certificates: []tls.Certificate{cert},
+}
+server := dns.NewServer(&dns.ServerOptions{
+	Port:       53,
+	DoHPort:    443,
+	EnableDoH:  true,
+	TLSConfig:  tlsConfig,
+})
+
+server.Handle(func(host string, typ int) ([]string, error) {
+	// Your DNS resolution logic
+	return []string{"1.2.3.4"}, nil
+})
+
+server.Serve()
+```
+
+DoH server supports both GET and POST methods:
+- GET: `https://your-server:443/dns-query?dns=<base64url-encoded-dns-message>`
+- POST: `https://your-server:443/dns-query` with `Content-Type: application/dns-message`
+
+### DNS-over-QUIC (DoQ) Server
+
+```go
+import (
+	"github.com/go-zoox/dns"
+)
+
+// Create DoQ server with TLS certificate
+server := dns.NewServer(&dns.ServerOptions{
+	Port:        53,  // Plain DNS port
+	DoQPort:     853, // DoQ port (default)
+	EnableDoQ:   true,
+	TLSCertFile: "/path/to/cert.pem",
+	TLSKeyFile:  "/path/to/key.pem",
+})
+
+// Or use tls.Config directly
+tlsConfig := &tls.Config{
+	Certificates: []tls.Certificate{cert},
+}
+server := dns.NewServer(&dns.ServerOptions{
+	Port:       53,
+	DoQPort:    853,
+	EnableDoQ:  true,
+	TLSConfig:  tlsConfig,
+})
+
+server.Handle(func(host string, typ int) ([]string, error) {
+	// Your DNS resolution logic
+	return []string{"1.2.3.4"}, nil
+})
+
+server.Serve()
+```
+
 ## Features
 
 ### Client
@@ -207,8 +303,8 @@ server.Serve()
 	* [x] Plain DNS in UDP
 	* [x] Plain DNS in TCP
 * [x] DNS-over-TLS (DoT)
-* [ ] DNS-over-HTTPS (DoH)
-* [ ] DNS-over-QUIC (DoQ)
+* [x] DNS-over-HTTPS (DoH)
+* [x] DNS-over-QUIC (DoQ)
 
 ## Inspired By
 * [AdGuardHome](https://github.com/AdguardTeam/AdGuardHome) - Network-wide ads & trackers blocking DNS server.
