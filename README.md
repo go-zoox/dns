@@ -15,6 +15,8 @@ go get github.com/go-zoox/dns
 
 ## Getting Started
 
+### Basic DNS Server
+
 ```go
 func main() {
 	server := dns.NewServer(&dns.ServerOptions{
@@ -41,22 +43,79 @@ func main() {
 }
 ```
 
+### DNS-over-TLS (DoT) Client
+
+```go
+import (
+	"github.com/go-zoox/dns"
+	"github.com/go-zoox/dns/client"
+)
+
+// Use DoT server
+client := dns.NewClient(&dns.ClientOptions{
+	Servers: []string{"tls://1.1.1.1"}, // Cloudflare DoT
+	Timeout: 10 * time.Second,
+})
+
+// Lookup with DoT
+ips, err := client.LookUp("example.com")
+if err != nil {
+	log.Fatal(err)
+}
+fmt.Println("IPs:", ips)
+```
+
+### DNS-over-TLS (DoT) Server
+
+```go
+import (
+	"github.com/go-zoox/dns"
+)
+
+// Create DoT server with TLS certificate
+server := dns.NewServer(&dns.ServerOptions{
+	Port:        53,  // Plain DNS port
+	DoTPort:     853, // DoT port (default)
+	EnableDoT:   true,
+	TLSCertFile: "/path/to/cert.pem",
+	TLSKeyFile:  "/path/to/key.pem",
+})
+
+// Or use tls.Config directly
+tlsConfig := &tls.Config{
+	Certificates: []tls.Certificate{cert},
+}
+server := dns.NewServer(&dns.ServerOptions{
+	Port:       53,
+	DoTPort:    853,
+	EnableDoT:  true,
+	TLSConfig:  tlsConfig,
+})
+
+server.Handle(func(host string, typ int) ([]string, error) {
+	// Your DNS resolution logic
+	return []string{"1.2.3.4"}, nil
+})
+
+server.Serve()
+```
+
 ## Features
 
 ### Client
 * [x] Plain DNS
 	* [x] Plain DNS in UDP
 	* [x] Plain DNS in TCP
-* [x] DNS-over-TLS (DoT)
+* [x] DNS-over-TLS (DoT) - Use `tls://` prefix (e.g., `tls://1.1.1.1`)
 * [x] DNS-over-HTTPS (DoH)
 * [x] DNS-over-QUIC (DoQ)
 * [x] DNSCrypt
 
 ### Server
-* [ ] Plain DNS
+* [x] Plain DNS
 	* [x] Plain DNS in UDP
 	* [x] Plain DNS in TCP
-* [ ] DNS-over-TLS (DoT)
+* [x] DNS-over-TLS (DoT)
 * [ ] DNS-over-HTTPS (DoH)
 * [ ] DNS-over-QUIC (DoQ)
 
